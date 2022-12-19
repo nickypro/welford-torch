@@ -15,9 +15,9 @@ Welford's method is more numerically stable than the standard method. The theori
 This library is a fork of the `welford` library implemented in Numpy ( https://github.com/a-mitani/welford ).
 
 ## Install
-Download package via [PyPI repository](https://pypi.org/project/welford_torch/)
+Download package via [PyPI repository](https://pypi.org/project/welford-torch/)
 ```
-$ pip install welford_torch
+$ pip install welford-torch
 ```
 
 ## Example

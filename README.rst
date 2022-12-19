@@ -24,11 +24,11 @@ Install
 -------
 
 Download package via `PyPI
-repository <https://pypi.org/project/welford_torch/>`__
+repository <https://pypi.org/project/welford-torch/>`__
 
 ::
 
-   $ pip install welford_torch
+   $ pip install welford-torch
 
 Example
 -------
