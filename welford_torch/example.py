@@ -1,6 +1,6 @@
 # %%
 import torch
-from welford import Welford
+from welford_torch import Welford
 
 # Initialize Welford object
 w = Welford()
@@ -13,7 +13,7 @@ w.add(torch.tensor([2, 120]))
 # output
 print(w.mean)  # mean --> [  1. 110.]
 print(w.var_s)  # sample variance --> [1, 100]
-print(w.var_p)  # population variance --> [ 0.6666 66.66]
+print(w.var_p)  # population variance --> [ 0.6667 66.6667 ]
 
 # You can add other samples after calculating variances.
 w.add(torch.tensor([3, 130]))
@@ -25,7 +25,7 @@ print(w.var_s)  # sample variance --> [  2.5 250. ]
 print(w.var_p)  # population variance --> [  2. 200.]
 # %%
 import torch
-from welford import Welford
+from welford_torch import Welford
 
 # Initialize Welford object with samples.
 ini = torch.tensor([[0, 100], [1, 110], [2, 120]])
@@ -34,7 +34,7 @@ w = Welford(ini)
 # output
 print(w.mean)  # mean --> [  1. 110.]
 print(w.var_s)  # sample variance --> [1, 100]
-print(w.var_p)  # population variance --> [ 0.66666667 66.66666667]
+print(w.var_p)  # population variance --> [ 0.6667 66.6667]
 
 # add other samples through batch method
 other_samples = torch.tensor([[3, 130], [4, 140]])
@@ -48,7 +48,7 @@ print(w.var_p)  # population variance --> [  2. 200.]
 
 # %%
 import torch
-from welford import Welford
+from welford_torch import Welford
 
 # Initialize two Welford objects
 w_1 = Welford()
@@ -60,7 +60,7 @@ w_1.add(torch.tensor([0, 100]))
 w_1.add(torch.tensor([1, 110]))
 w_1.add(torch.tensor([2, 120]))
 print(w_1.var_s)  # sample variance -->[  1. 100.]
-print(w_1.var_p)  # population variance -->[ 0.66666667 66.66666667]
+print(w_1.var_p)  # population variance -->[ 0.6667 66.6667]
 
 # On w_2
 w_2.add(torch.tensor([3, 130]))

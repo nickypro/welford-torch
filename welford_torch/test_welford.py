@@ -1,5 +1,5 @@
 import torch
-from welford import Welford
+from welford_torch import Welford
 
 
 def test_init():
