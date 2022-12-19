@@ -4,16 +4,16 @@ with open("README.rst") as f:
     readme = f.read()
 
 kwargs = {
-    "name": "welford",
-    "version": "0.2.5",
-    "description": "Python (numpy) implementation of Welford's algorithm.",
-    "author": "Akira Mitani",
-    "author_email": "amitani.public@gmail.com",
-    "url": "https://github.com/a-mitani/welford",
+    "name": "welford_torch",
+    "version": "0.1",
+    "description": "Python (Pytorch) implementation of Welford's algorithm.",
+    "author": "Nicky Pochinkov",
+    "author_email": "work@nicky.pro",
+    "url": "https://github.com/pesvut/welford-torch",
     "license": "MIT",
-    "keywords": ["statistics", "online", "welford"],
-    "install_requires": ["numpy"],
-    "packages": ["welford"],
+    "keywords": ["statistics", "online", "welford", "torch"],
+    "install_requires": ["torch"],
+    "packages": ["welford_torch"],
     "long_description": readme,
 }
 
