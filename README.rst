@@ -45,9 +45,9 @@ For Online Calculation
    w = Welford()
 
    # Input data samples sequentialy
-   w.add(np.tensor([0, 100]))
-   w.add(np.tensor([1, 110]))
-   w.add(np.tensor([2, 120]))
+   w.add(torch.tensor([0, 100]))
+   w.add(torch.tensor([1, 110]))
+   w.add(torch.tensor([2, 120]))
 
    # output
    print(w.mean)  # mean --> [  1. 110.]
@@ -55,8 +55,8 @@ For Online Calculation
    print(w.var_p)  # population variance --> [ 0.6667 66.6667 ]
 
    # You can add other samples after calculating variances.
-   w.add(np.tensor([3, 130]))
-   w.add(np.tensor([4, 140]))
+   w.add(torch.tensor([3, 130]))
+   w.add(torch.tensor([4, 140]))
 
    # output with added samples
    print(w.mean)  # mean --> [  2. 120.]
@@ -105,15 +105,15 @@ Welford also offers parallel calculation method for variance.
 
    # Each object will calculate variance of each samples in parallel.
    # On w_1
-   w_1.add(np.tensor([0, 100]))
-   w_1.add(np.tensor([1, 110]))
-   w_1.add(np.tensor([2, 120]))
+   w_1.add(torch.tensor([0, 100]))
+   w_1.add(torch.tensor([1, 110]))
+   w_1.add(torch.tensor([2, 120]))
    print(w_1.var_s)  # sample variance -->[  1. 100.]
    print(w_1.var_p)  # population variance -->[ 0.6667 66.6667]
 
    # On w_2
-   w_2.add(np.tensor([3, 130]))
-   w_2.add(np.tensor([4, 140]))
+   w_2.add(torch.tensor([3, 130]))
+   w_2.add(torch.tensor([4, 140]))
    print(w_2.var_s)  # sample variance -->[ 0.5 50. ]
    print(w_2.var_p)  # sample variance -->[ 0.25 25.  ]
 

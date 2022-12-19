@@ -29,7 +29,7 @@ from welford_torch import Welford
 # Initialize Welford object
 w = Welford()
 
-# Itorchut data samples sequentialy
+# Input data samples sequentialy
 w.add(torch.tensor([0, 100]))
 w.add(torch.tensor([1, 110]))
 w.add(torch.tensor([2, 120]))
