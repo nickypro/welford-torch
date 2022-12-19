@@ -28,7 +28,7 @@ repository <https://pypi.org/project/welford_torch/>`__
 
 ::
 
-   $ pip install welford
+   $ pip install welford_torch
 
 Example
 -------

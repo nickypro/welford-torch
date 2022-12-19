@@ -4,7 +4,7 @@ with open("README.rst") as f:
     readme = f.read()
 
 kwargs = {
-    "name": "welford_torch",
+    "name": "welford-torch",
     "version": "0.2.5",
     "description": "Python (Pytorch) implementation of Welford's algorithm.",
     "author": "Nicky Pochinkov",

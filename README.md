@@ -17,7 +17,7 @@ This library is a fork of the `welford` library implemented in Numpy ( https://g
 ## Install
 Download package via [PyPI repository](https://pypi.org/project/welford_torch/)
 ```
-$ pip install welford
+$ pip install welford_torch
 ```
 
 ## Example
