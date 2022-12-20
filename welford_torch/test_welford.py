@@ -159,3 +159,19 @@ def test_merge():
     assert torch.allclose(wa.mean, torch.tensor([[0.5, 105, 1050], [2, 220, 2200]], dtype=torch.float32))
     assert torch.allclose(wa.var_s, torch.tensor([[0.5, 50, 5000], [0, 0, 0]], dtype=torch.float32))
     assert torch.allclose(wa.var_p, torch.tensor([[0.25, 25, 2500], [0, 0, 0]], dtype=torch.float32))
+
+def test_all():
+    tests = [
+        test_init,
+        test_add,
+        test_add_all,
+        test_rollback,
+        test_merge,
+    ]
+    for test in tests:
+        try:
+            print(f"# Running test {test.__name__}...")
+            test()
+            print(f"Test {test.__name__} passed")
+        except AssertionError as e:
+            print(f"Test {test.__name__} failed: {e}")
