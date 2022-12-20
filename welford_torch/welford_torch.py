@@ -46,6 +46,7 @@ class Welford:
 
         # Initialize instance attributes
         self.__dtype = dtype
+        self.__detached = False
 
         if elements is None:
             self.__device = device
@@ -104,6 +105,8 @@ class Welford:
             self.__m = torch.zeros(element.shape, dtype=self.__dtype).to(self.__device)
             self.__s = torch.zeros(element.shape, dtype=self.__dtype).to(self.__device)
             self.__init_old_with_nan()
+            if self.__detached:
+                self.detach()
         # argument check if already initialized
         else:
             assert element.shape == self.__shape
@@ -184,3 +187,12 @@ class Welford:
         self.__m_old[...] = torch.nan
         self.__s_old = torch.empty(self.__shape, dtype=self.__dtype).to(self.__device)
         self.__s_old[...] = torch.nan
+
+    def detach(self):
+        self.__detached = True
+        if not (self.__shape is None):
+            self.__m = self.__m.detach()
+            self.__s = self.__s.detach()
+            self.__m_old = self.__m_old.detach()
+            self.__s_old = self.__s_old.detach()
+        return self
