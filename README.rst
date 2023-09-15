@@ -1,8 +1,10 @@
 Welford
 =======
 
-Python (Pytorch) implementation of Welford’s algorithm, which is online or
-parallel algorithm for calculating variances.
+Python (Pytorch) implementation to calculate Standard Deviation, Variance,
+Covariance Matrix and Pearson Correlation Coefficient online and/or in parallel.
+This implementation uses Welford's algorithm for variance, and standard
+deviation. Online Covariance calculation uses a generalization shown on Wikipedia.
 
 The algorithm is described in the followings,
 
@@ -10,15 +12,19 @@ The algorithm is described in the followings,
    Algorithm <https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm>`__
 -  `Wikipedia:Welford Parallel
    Algorithm <https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Parallel_algorithm>`__
+-  `Wikipedia:Covariance Online Algorithm <https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online>`__
 
-Welford’s method is more numerically stable than the standard method.
-The theoritical background of Welford’s method is mentioned in detail on
-the following blog articles. Please refer them if you are interested in.
+Welford's method is more numerically stable than the standard method. The theoretical background of Welford's method is mentioned in detail on the following blog articles. Please refer them if you are interested in.
 
--  http://www.johndcook.com/blog/standard_deviation
--  https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/
+* http://www.johndcook.com/blog/standard_deviation
+* https://jonisalonen.com/2013/deriving-welfords-method-for-computing-variance/
 
-This library is a fork of `welford` library implemented in Numpy ( https://github.com/a-mitani/welford ).
+This library was initially a fork of the `welford` library implemented in Numpy ( https://github.com/a-mitani/welford ).
+
+The Covariance calculation was later added, based on the implementation by Carsten Schelp (
+https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
+). The OnlineCovariance class has feature parity with the normal Welford class,
+but takes more memory and compute as it also computes covariance.
 
 Install
 -------
@@ -30,8 +36,8 @@ repository <https://pypi.org/project/welford-torch/>`__
 
    $ pip install welford-torch
 
-Example
--------
+Example (Welford)
+-----------------
 
 For Online Calculation
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -121,3 +127,27 @@ Welford also offers parallel calculation method for variance.
    w_1.merge(w_2)
    print(w.var_s)  # sample variance --> [  2.5 250. ]
    print(w_1.var_p)  # sample variance -->[  2. 200.]
+
+Example (OnlineCovariance)
+--------------------------
+
+We note that one can replace Welford with OnlineCovariance and perform get the same
+attributes, but also get covariance and
+
+.. code:: python
+   import torch
+   from welford_torch import OnlineCovariance
+
+
+   # Initialize Welford object with samples
+   ini = torch.tensor([[0, 100],
+                     [1, 110],
+                     [2, 120]])
+   w = OnlineCovariance(ini)
+
+   # output
+   print(w.mean)   # mean --> [  1. 110.]
+   print(w.var_s)  # sample variance --> [1, 100]
+   print(w.var_p)  # population variance --> [ 0.6667 66.6667]
+   print(w.cov)      # covariance matrix --> [[ 0.6667,  6.6667], [ 6.6667, 66.6667]]
+   print(w.corrcoef) # pearson correlation coefficient --> [[1., 1.], [1., 1.]]
