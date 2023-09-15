@@ -148,11 +148,43 @@ def test_merge():
     assert np.allclose(torch_to_np(ocov_both.corrcoef), torch_to_np(ocov_merged.corrcoef)), \
         "Pearson-Correlationcoefficient-matrix of ocov_both and ocov_merged should be the same."
 
+def test_whitening():
+    # COVARIANCE MATRIX shape [3] -> [3, 3]
+    data = create_correlated_dataset(
+        10000, (2.2, 4.4, 1.5), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3)
+    )
+
+    ocov = OnlineCovariance(data)
+
+    # EIGENVALUES
+    eig_vec, eig_val = ocov.eig_vec, ocov.eig_val
+
+    # WHITENING
+    whit, whit_inv = ocov.whit, ocov.whit_inv
+
+    assert not torch.allclose(whit, whit_inv, atol=1e-3), \
+        "Whitening matrix should not be the inverse of itself in this dataset."
+    assert torch.allclose( (whit @ whit_inv), ocov.identity, atol=1e-3), \
+        "Whitening matrix by it's inverse should be the identity matrix."
+
+    assert not torch.allclose( ocov.cov, ocov.identity, atol=1e-3), \
+        "Covariance matrix for the given dataset should not be the Identity matrix."
+    assert torch.allclose( whit @ ocov.cov @ whit.transpose(-2, -1), ocov.identity, atol=1e-3), \
+        "Whitening matrix should transform the covariance matrix to the Identity matrix."
+
+    # Calculate for new whitened dataset
+    whitened_data = data @ whit.transpose(-2, -1)
+    whitened_ocov = OnlineCovariance(whitened_data)
+
+    assert torch.allclose(whitened_ocov.cov, whitened_ocov.identity, atol=1e-3), \
+        "Whitening data should lead Covariance Matrix to look like the Identity matrix in this dataset."
+
 def test_all():
     tests = [
         test_init,
         test_add,
         test_merge,
+        test_whitening,
     ]
     for test in tests:
         try:

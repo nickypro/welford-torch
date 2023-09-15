@@ -20,6 +20,11 @@ class OnlineCovariance:
         self.__dtype = dtype
         self.__detached = False
 
+        # Additional parameters for eigenvalue decomposition & whitening.
+        self.__eig_last_count = 0
+        self.__eig_vectors = None
+        self.__eig_values = None
+
         if elements is None:
             self.__device = device
             self.__order = None
@@ -97,6 +102,41 @@ class OnlineCovariance:
         tensor, The (sample) variance of the added data.
         """
         return self.__getvars(ddof=1)
+
+    @property
+    def eig_val(self):
+        """ tensor, Return the eigenvalues of the covariance matrix. """
+        if self.__count < 1:
+            return None
+        self.__compute_eig()
+        return self.__eig_values
+
+    @property
+    def eig_vec(self):
+        """ tensor, Return the eigenvectors of the covariance matrix. """
+        if self.__count < 1:
+            return None
+        self.__compute_eig()
+        return self.__eig_vectors
+
+    @property
+    def whit(self):
+        """ tensor, The whitening matrix of the added data. """
+        if self.__count < 1:
+            return None
+        return self.__compute_whitening()
+
+    @property
+    def whit_inv(self):
+        """ tensor, The inverse whitening matrix of the added data. """
+        if self.__count < 1:
+            return None
+        return self.__compute_whitening_inverse()
+
+    @property
+    def identity(self):
+        """ tensor, The identity in the shape of the added data. """
+        return self.__identity
 
     def add(self, observation):
         """
@@ -202,6 +242,47 @@ class OnlineCovariance:
         shape = tensor.shape # __order
         repeat_shape = ( *( [1]*len(shape) ), shape[-1] ) # 1, ..., 1, n
         return tensor.unsqueeze(-1).repeat(repeat_shape)
+
+    def __compute_eig(self):
+        """
+        Compute the eigenvalues and eigenvectors of the covariance matrix.
+
+        Returns:
+            eigenvalues: tensor, The eigenvalues of the covariance matrix.
+            eigenvectors: tensor, The eigenvectors of the covariance matrix.
+        """
+        # Check if we have already computed them
+        if self.__eig_last_count == self.__count:
+            return self.__eig_values, self.__eig_vectors
+        self.__eig_last_count = self.__count
+
+        # Initialize the eigenvectors tensor
+        flat_shape = (-1, *self.__shape[-2:])
+        self.__eig_vectors = self.__cov.clone().reshape(flat_shape)
+        self.__eig_values = []
+
+        for i in range(self.__eig_vectors.shape[0]):
+            sigma = self.__eig_vectors[i]
+            eigenvalues, eigenvectors = torch.linalg.eigh(sigma, UPLO='U')
+            self.__eig_vectors[i] = eigenvectors
+            self.__eig_values.append(eigenvalues)
+
+        self.__eig_vectors = self.__eig_vectors.view(self.__shape)
+        self.__eig_values  = torch.stack(self.__eig_values).view(self.__order)
+
+        return self.__eig_values, self.__eig_vectors
+
+    def __compute_whitening(self):
+        """ Compute the whitening matrix """
+        val, vec = self.__compute_eig()
+        D_inv_sqrt = self.__expand_last_dim(1.0 / torch.sqrt(val)) * self.__identity
+        return (vec @ D_inv_sqrt @ vec.transpose(-2, -1))
+
+    def __compute_whitening_inverse(self):
+        """ Compute inverse of the whitening matrix """
+        val, vec = self.__compute_eig()
+        D_sqrt = self.__expand_last_dim(torch.sqrt(val)) * self.__identity
+        return (vec @ D_sqrt @ vec.transpose(-2, -1))
 
     def detach(self):
         self.__detached = True
