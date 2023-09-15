@@ -1,10 +1,12 @@
 # Source: https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
 
+import copy
+import traceback
+
 import torch
 import numpy as np
+
 from covariance_torch import OnlineCovariance
-import traceback
-import copy
 
 # tools for testing
 def create_correlated_dataset(n, mu, dependency, scale):
@@ -17,19 +19,56 @@ def create_correlated_dataset(n, mu, dependency, scale):
 def torch_to_np(tensor):
     return tensor.cpu().numpy()
 
+def calculate_conventional(data):
+    mean = torch.mean(data, dim=0)
+    # Using numpy for covariance and correlation coefficient calculations
+    cov = np.cov(torch_to_np(data), rowvar=False)
+    corrcoef = np.corrcoef(torch_to_np(data), rowvar=False)
+
+    return mean, cov, corrcoef
+
+# Test variances
+def test_init():
+    a = torch.tensor([[0]])
+    w = OnlineCovariance(a)
+    assert w.count == 1
+    assert torch.allclose(w.mean, torch.tensor([0], dtype=torch.float32))
+    assert torch.all(torch.isnan(w.var_s))
+    assert torch.allclose(w.var_p, torch.tensor([0], dtype=torch.float32))
+
+    a = torch.tensor([[0], [1]])
+    w = OnlineCovariance(a)
+    assert w.count == 2
+    assert torch.allclose(w.mean, torch.tensor([0.5]))
+    assert torch.allclose(w.var_s, torch.tensor([0.5]))
+    assert torch.allclose(w.var_p, torch.tensor([0.25]))
+
+    a = torch.tensor([[0, 100], [1, 110], [2, 120], [3, 130], [4, 140]])
+    w = OnlineCovariance(a)
+    assert w.count == 5
+    assert torch.allclose(w.mean, torch.tensor([2, 120], dtype=torch.float32))
+    assert torch.allclose(w.var_s, torch.tensor([2.5, 250], dtype=torch.float32))
+    assert torch.allclose(w.var_p, torch.tensor([2, 200], dtype=torch.float32))
+
+    a = torch.arange(60).reshape(3, 4, 5)
+    w = OnlineCovariance(a)
+    assert w.mean.shape == w.var_s.shape == w.var_p.shape == (4, 5)
+    a = a.to(torch.float32)
+    assert torch.allclose(w.mean, torch.mean(a, axis=0))
+    assert torch.allclose(w.var_s, torch.var(a, axis=0, unbiased=True))
+    assert torch.allclose(w.var_p, torch.var(a, axis=0, unbiased=False))
+
 #tests
 def test_add():
     "Demonstrate OnlineCovariance.add(observation)"
 
+    # COVARIANCE MATRIX shape [3] -> [3, 3]
     data = create_correlated_dataset(
         10000, (2.2, 4.4, 1.5), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3)
     )
 
-    # ORIGINAL COVARIANCE MATRIX
-    conventional_mean = torch.mean(data, dim=0)
-    # Using numpy for covariance and correlation coefficient calculations
-    conventional_cov = np.cov(torch_to_np(data), rowvar=False)
-    conventional_corrcoef = np.corrcoef(torch_to_np(data), rowvar=False)
+    # CONVENTIONAL COVARIANCE MATRIX
+    conventional_mean, conventional_cov, conventional_corrcoef = calculate_conventional(data)
 
     # ONLINE COVARIANCE MATRIX
     ocov = OnlineCovariance()
@@ -42,9 +81,41 @@ def test_add():
     assert np.allclose(conventional_cov, torch_to_np(ocov.cov), atol=1e-3), \
         "Covariance-matrix should be the same with both approaches."
 
-
     assert np.allclose(conventional_corrcoef, torch_to_np(ocov.corrcoef)), \
         "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
+    # ONLINE COVARIANCE MATRICES shape [2, 3] -> [3, 3]
+    data_2 = create_correlated_dataset(
+        10000, (6.6, 1.1, 2.5), torch.tensor([[0.9, 0.2, 0.3],[0.3, 0.1, 0.2],[0.2,0.3,0.5]]), (2, 7, 5)
+    )
+
+    # CONVENTIONAL COVARIANCE
+    conventional_mean_2, conventional_cov_2, conventional_corrcoef_2 = calculate_conventional(data_2)
+
+    # ONLINE COVARIANCE MATRIX
+    zipped_data = []
+    for obs_1, obs_2 in zip(data, data_2):
+        zipped_data.append(torch.stack([obs_1, obs_2]))
+    zipped_data = torch.stack(zipped_data)
+
+    ocov = OnlineCovariance()
+    for observation in zipped_data:
+        ocov.add(observation)
+
+    assert torch.allclose(conventional_mean, ocov.mean[0]), \
+        "Mean should be the same with both approaches."
+    assert np.allclose(conventional_cov, torch_to_np(ocov.cov[0]), atol=1e-3), \
+        "Covariance-matrix should be the same with both approaches."
+    assert np.allclose(conventional_corrcoef, torch_to_np(ocov.corrcoef[0])), \
+        "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
+    assert torch.allclose(conventional_mean_2, ocov.mean[1]), \
+        "Mean should be the same with both approaches."
+    assert np.allclose(conventional_cov_2, torch_to_np(ocov.cov[1]), atol=1e-3), \
+        "Covariance-matrix should be the same with both approaches."
+    assert np.allclose(conventional_corrcoef_2, torch_to_np(ocov.corrcoef[1])), \
+        "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
 
 def test_merge():
     "Demonstrate OnlineCovariance.merge()"
@@ -79,6 +150,7 @@ def test_merge():
 
 def test_all():
     tests = [
+        test_init,
         test_add,
         test_merge,
     ]
