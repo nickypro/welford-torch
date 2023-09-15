@@ -118,7 +118,7 @@ class OnlineCovariance:
         weighted_delta_at_n = (observation - self.__mean) / self.__count
 
         D_at_n = self.__expand_last_dim(weighted_delta_at_n).transpose(-2, -1)
-        D = (self.__expand_last_dim(delta_at_nMin1) * self.__identity).matmul(D_at_n)
+        D = (self.__expand_last_dim(delta_at_nMin1) * self.__identity) @ D_at_n
         self.__cov = self.__cov * (self.__count - 1) / self.__count + D
 
     def add_all(self, elements):
