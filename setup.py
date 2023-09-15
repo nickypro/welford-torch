@@ -5,13 +5,13 @@ with open("README.rst") as f:
 
 kwargs = {
     "name": "welford-torch",
-    "version": "0.1.2",
-    "description": "Python (Pytorch) implementation of Welford's algorithm.",
+    "version": "0.2.0",
+    "description": "Python (Pytorch) implementation of Online Algorithms for Standard Deviation, Covariance and Correlation Coefficients.",
     "author": "Nicky Pochinkov",
     "author_email": "work@nicky.pro",
     "url": "https://github.com/pesvut/welford-torch",
     "license": "MIT",
-    "keywords": ["statistics", "online", "welford", "torch"],
+    "keywords": ["statistics", "online", "welford", "torch", "covariance", "correlation"],
     "install_requires": ["torch"],
     "packages": ["welford_torch"],
     "long_description": readme,
