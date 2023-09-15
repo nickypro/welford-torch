@@ -1,26 +1,28 @@
 # Source: https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
 
 import numpy as np
+import torch
 
 class OnlineCovariance:
     """
     A class to calculate the mean and the covariance matrix
     of the incrementally added, n-dimensional data.
     """
-    def __init__(self, order):
+    def __init__(self, order, dtype=torch.float32, device=None):
         """
         Parameters
         ----------
         order: int, The order (=="number of features") of the incrementally added
         dataset and of the resulting covariance matrix.
+        dtype: torch.dtype, data type to use for calculations. Default is torch.float32.
+        device: str, device to use for calculations. Default is None.
         """
         self._order = order
         self._shape = (order, order)
-        self._identity = np.identity(order)
-        self._ones = np.ones(order)
+        self._identity = torch.eye(order, dtype=dtype, device=device)
         self._count = 0
-        self._mean = np.zeros(order)
-        self._cov = np.zeros(self._shape)
+        self._mean = torch.zeros(order, dtype=dtype, device=device)
+        self._cov = torch.zeros(self._shape, dtype=dtype, device=device)
 
     @property
     def count(self):
@@ -40,21 +42,21 @@ class OnlineCovariance:
     @property
     def cov(self):
         """
-        array_like, The covariance matrix of the added data.
+        tensor, The covariance matrix of the added data.
         """
         return self._cov
 
     @property
     def corrcoef(self):
         """
-        array_like, The normalized covariance matrix of the added data.
+        tensor, The normalized covariance matrix of the added data.
         Consists of the Pearson Correlation Coefficients of the data's features.
         """
         if self._count < 1:
             return None
-        variances = np.diagonal(self._cov)
-        denomiator = np.sqrt(variances[np.newaxis,:] * variances[:,np.newaxis])
-        return self._cov / denomiator
+        variances = torch.diagonal(self._cov)
+        denominator = torch.sqrt(variances[None, :] * variances[:, None])
+        return self._cov / denominator
 
     def add(self, observation):
         """
@@ -62,18 +64,18 @@ class OnlineCovariance:
 
         Parameters
         ----------
-        observation: array_like, The observation to add.
+        observation: tensor, The observation to add.
         """
         if self._order != len(observation):
             raise ValueError(f'Observation to add must be of size {self._order}')
 
         self._count += 1
-        delta_at_nMin1 = np.array(observation - self._mean)
+        delta_at_nMin1 = observation - self._mean
         self._mean += delta_at_nMin1 / self._count
-        weighted_delta_at_n = np.array(observation - self._mean) / self._count
-        shp = (self._order, self._order)
-        D_at_n = np.broadcast_to(weighted_delta_at_n, self._shape).T
-        D = (delta_at_nMin1 * self._identity).dot(D_at_n.T)
+        weighted_delta_at_n = (observation - self._mean) / self._count
+
+        D_at_n = weighted_delta_at_n.expand(self._shape).T
+        D = (delta_at_nMin1 * self._identity).matmul(D_at_n.T)
         self._cov = self._cov * (self._count - 1) / self._count + D
 
     def merge(self, other):
@@ -100,10 +102,9 @@ class OnlineCovariance:
         count_corr = (other.count * self.count) / merged_cov._count
         merged_cov._mean = (self.mean/other.count + other.mean/self.count) * count_corr
         flat_mean_diff = self._mean - other._mean
-        shp = (self._order, self._order)
-        mean_diffs = np.broadcast_to(flat_mean_diff, self._shape).T
+        mean_diffs = flat_mean_diff.unsqueeze(1).repeat(1, self._order).t()
         merged_cov._cov = (self._cov * self.count \
-                           + other._cov * other._count \
+                           + other._cov * other.count \
                            + mean_diffs * mean_diffs.T * count_corr) \
                           / merged_cov.count
         return merged_cov
