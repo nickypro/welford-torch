@@ -106,7 +106,7 @@ class OnlineCovariance:
 
     def merge(self, other):
         """
-        Merges the current object and the given other object into a new OnlineCovariance object.
+        Merges the current object and the given other object into the current object.
 
         Parameters
         ----------
@@ -114,7 +114,7 @@ class OnlineCovariance:
 
         Returns
         -------
-        OnlineCovariance
+        self
         """
         if other.__order != self.__order:
             raise ValueError(
@@ -123,20 +123,26 @@ class OnlineCovariance:
                    ({self.__order} != {other.__order})
                    ''')
 
-        merged_cov = OnlineCovariance()
-        merged_cov.__device = self.__device
-        merged_cov.__dtype = self.__dtype
-        merged_cov.__order = self.__order
-        merged_cov.__shape = self.__shape
+        assert other.__shape == self.__shape
+        assert other.__dtype == self.__dtype
 
-        merged_cov.__count = self.count + other.count
-        count_corr = (other.count * self.count) / merged_cov.__count
-        merged_cov.__mean = (self.mean/other.count + other.mean/self.count) * count_corr
+        # Compute the merged covariance matrix.
+        __merged_count = self.count + other.count
+
+        count_corr = (other.count * self.count) / __merged_count
+        __merged_mean = (self.mean/other.count + other.mean/self.count) * count_corr
+
         flat_mean_diff = self.__mean - other.__mean
         repeat_shape = ( *( [1]*len(self.__shape[:-1]) ), self.__shape[-1] )
         mean_diffs = flat_mean_diff.unsqueeze(-1).repeat(repeat_shape)
-        merged_cov.__cov = (self.__cov * self.count \
+        __merged_cov = (self.__cov * self.count \
                            + other.__cov * other.count \
                            + mean_diffs * mean_diffs.transpose(-2, -1) * count_corr) \
-                          / merged_cov.count
-        return merged_cov
+                          / __merged_count
+
+        # Update the current object.
+        self.__count = __merged_count
+        self.__mean = __merged_mean
+        self.__cov = __merged_cov
+
+        return self

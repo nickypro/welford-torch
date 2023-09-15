@@ -4,6 +4,7 @@ import torch
 import numpy as np
 from covariance_torch import OnlineCovariance
 import traceback
+import copy
 
 # tools for testing
 def create_correlated_dataset(n, mu, dependency, scale):
@@ -62,7 +63,7 @@ def test_merge():
         ocov_part2.add(row)
         ocov_both.add(row)
 
-    ocov_merged = ocov_part1.merge(ocov_part2)
+    ocov_merged = copy.deepcopy(ocov_part1).merge(ocov_part2)
 
     assert ocov_both.count == ocov_merged.count, \
         "Count of ocov_both and ocov_merged should be the same."
