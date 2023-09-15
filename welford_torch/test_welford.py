@@ -175,3 +175,6 @@ def test_all():
             print(f"Test {test.__name__} passed")
         except AssertionError as e:
             print(f"Test {test.__name__} failed: {e}")
+
+if __name__ == "__main__":
+    test_all()
