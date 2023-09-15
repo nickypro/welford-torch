@@ -3,6 +3,7 @@
 import torch
 import numpy as np
 from covariance_torch import OnlineCovariance
+import traceback
 
 # tools for testing
 def create_correlated_dataset(n, mu, dependency, scale):
@@ -23,12 +24,14 @@ def test_add():
         10000, (2.2, 4.4, 1.5), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3)
     )
 
+    # ORIGINAL COVARIANCE MATRIX
     conventional_mean = torch.mean(data, dim=0)
     # Using numpy for covariance and correlation coefficient calculations
     conventional_cov = np.cov(torch_to_np(data), rowvar=False)
     conventional_corrcoef = np.corrcoef(torch_to_np(data), rowvar=False)
 
-    ocov = OnlineCovariance(data.shape[1])
+    # ONLINE COVARIANCE MATRIX
+    ocov = OnlineCovariance()
     for observation in data:
         ocov.add(observation)
 
@@ -47,9 +50,9 @@ def test_merge():
 
     data_part1 = create_correlated_dataset(500, (2.2, 4.4, 1.5), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3))
     data_part2 = create_correlated_dataset(1000, (5, 6, 2), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3))
-    ocov_part1 = OnlineCovariance(3)
-    ocov_part2 = OnlineCovariance(3)
-    ocov_both = OnlineCovariance(3)
+    ocov_part1 = OnlineCovariance()
+    ocov_part2 = OnlineCovariance()
+    ocov_both = OnlineCovariance()
 
     for row in data_part1:
         ocov_part1.add(row)
@@ -85,6 +88,7 @@ def test_all():
             print(f"Test {test.__name__} passed")
         except AssertionError as e:
             print(f"Test {test.__name__} failed: {e}")
+            traceback.print_exc()
 
 if __name__ == "__main__":
     test_all()
