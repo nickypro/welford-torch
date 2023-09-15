@@ -1,6 +1,6 @@
 from setuptools import setup
 
-with open("README.rst") as f:
+with open("README.md") as f:
     readme = f.read()
 
 kwargs = {
@@ -15,6 +15,7 @@ kwargs = {
     "install_requires": ["torch"],
     "packages": ["welford_torch"],
     "long_description": readme,
+    "long_description_content_type": "text/markdown",
 }
 
 setup(**kwargs)
