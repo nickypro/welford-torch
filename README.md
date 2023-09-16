@@ -55,10 +55,18 @@ print(w.var_s)  # Sample variance --> [ 1., 50.]
 print(w.var_p)  # Population variance --> [ 0.8000, 40.0000]
 print(w.cov)      # Covariance matrix --> [[ 0.8000,  4.0000], [ 4.0000, 40.0000]]
 print(w.corrcoef) # Pearson correlation coefficient --> [[1.0, 0.7071], [0.7071, 1.0000]]
-print(w.eig_val)  # Eigenvalues (ascending) -> [ 0.3960, 40.4040]
-print(w.eig_vec)  # Eigenvectors -> [[-0.9949,  0.1005], [ 0.1005,  0.9949]]
-print(w.whit)     # Whitening Matrix [[ 1.5746, -0.1431], [-0.1431,  0.1718]]
-print(w.whit_inv) # Whitening Matrix Inverse [[0.6871, 0.5726], [0.5726, 6.2986]]
+print(w.eig_val)  # Eigenvalues (ascending) --> [ 0.3960, 40.4040]
+print(w.eig_vec)  # Eigenvectors --> [[-0.9949,  0.1005], [ 0.1005,  0.9949]]
+print(w.whit)     # Whitening Matrix --> [[ 1.5746, -0.1431], [-0.1431,  0.1718]]
+print(w.whit_inv) # Whitening Matrix Inverse --> [[0.6871, 0.5726], [0.5726, 6.2986]]
+
+# Whitened dataset
+print( (dataset.to(torch.float32) - w.mean) @ w.whit.T )
+# --> [[-0.1431, -1.5746],
+#      [ 0.0000,  0.0000],
+#      [ 0.1431,  1.5746],
+#      [-1.5746,  0.1431],
+#      [ 1.5746, -0.1431]]
 ```
 
 ## Example (Welford)
