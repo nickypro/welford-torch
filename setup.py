@@ -5,8 +5,8 @@ with open("README.md") as f:
 
 kwargs = {
     "name": "welford-torch",
-    "version": "0.2.0",
-    "description": "Python (Pytorch) implementation of Online Algorithms for Standard Deviation, Covariance and Correlation Coefficients.",
+    "version": "0.2.1",
+    "description": "Online Pytorch implementation to get Standard Deviation, Covariance, Correlation and Whitening.",
     "author": "Nicky Pochinkov",
     "author_email": "work@nicky.pro",
     "url": "https://github.com/pesvut/welford-torch",
