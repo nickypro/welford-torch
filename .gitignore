@@ -1,3 +1,4 @@
 dist/*
+build/*
 welford_torch.egg-info/*
 welford_torch/__pycache__/*
