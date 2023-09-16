@@ -1,6 +1,8 @@
 # Welford
-Python (Pytorch) implementation to calculate Standard Deviation, Variance, and
-Covariance Matrix online and/or in parallel.
+Python (Pytorch) implementation calculating Standard Deviation, Variance,
+Covariance Matrix, and Whitening Matrix online and in parallel. This makes it
+more memory efficient than computing in the standard way.
+
 This implementation uses Welford's algorithm for variance, and standard
 deviation. Online Covariance calculation uses a generalization shown on Wikipedia.
 
@@ -17,16 +19,46 @@ Welford's method is more numerically stable than the standard method. The theore
 
 This library is a fork of the `welford` library implemented in Numpy ( https://github.com/a-mitani/welford ).
 
-The covariance calculation based on the implementation by Carsten Schelp (
+I later added the covariance calculation inspired by the implementation by Carsten Schelp (
 https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
-). The OnlineCovariance class has feature parity with the normal Welford class,
+). The `OnlineCovariance` class has feature parity with the normal `Welford` class,
 but takes more memory and compute.
-
 
 ## Install
 Download package via [PyPI repository](https://pypi.org/project/welford-torch/)
 ```
 $ pip install welford-torch
+```
+
+## Example (OnlineCovariance)
+
+Example showing how to use `OnlineCovariance` to compute the covariance and
+other quantities. If only computing mean, standard deviation and variance, use
+the `Welford` class as it is faster and uses less memory. Otherwise, both
+classes have the same functionality
+(i.e: `.add()`, `.add_all()` and `.merge()`. See below for examples).
+
+```python
+import torch
+from welford_torch import OnlineCovariance
+
+# Initialize Welford object, and add samples
+w = OnlineCovariance()
+
+dataset = torch.tensor([[-1, 90], [0, 100], [1, 110], [-1, 100], [1, 100]])
+for datapoint in dataset:
+    w.add(datapoint)
+
+# output
+print(w.mean)   # Mean --> [  0., 100.]
+print(w.var_s)  # Sample variance --> [ 1., 50.]
+print(w.var_p)  # Population variance --> [ 0.8000, 40.0000]
+print(w.cov)      # Covariance matrix --> [[ 0.8000,  4.0000], [ 4.0000, 40.0000]]
+print(w.corrcoef) # Pearson correlation coefficient --> [[1.0, 0.7071], [0.7071, 1.0000]]
+print(w.eig_val)  # Eigenvalues (ascending) -> [ 0.3960, 40.4040]
+print(w.eig_vec)  # Eigenvectors -> [[-0.9949,  0.1005], [ 0.1005,  0.9949]]
+print(w.whit)     # Whitening Matrix [[ 1.5746, -0.1431], [-0.1431,  0.1718]]
+print(w.whit_inv) # Whitening Matrix Inverse [[0.6871, 0.5726], [0.5726, 6.2986]]
 ```
 
 ## Example (Welford)
@@ -111,28 +143,4 @@ w_1.merge(w_2)
 print(w.var_s)  # sample variance --> [  2.5 250. ]
 print(w_1.var_p)  # sample variance -->[  2. 200.]
 
-```
-
-## Example (OnlineCovariance)
-
-We note that one can replace Welford with OnlineCovariance and perform get the same
-attributes, but also get covariance and pearson correlation coefficients.
-
-```python
-import torch
-from welford_torch import OnlineCovariance
-
-
-# Initialize Welford object with samples
-ini = torch.tensor([[0, 100],
-                    [1, 110],
-                    [2, 120]])
-w = OnlineCovariance(ini)
-
-# output
-print(w.mean)   # mean --> [  1. 110.]
-print(w.var_s)  # sample variance --> [1, 100]
-print(w.var_p)  # population variance --> [ 0.6667 66.6667]
-print(w.cov)      # covariance matrix --> [[ 0.6667,  6.6667], [ 6.6667, 66.6667]]
-print(w.corrcoef) # pearson correlation coefficient --> [[1., 1.], [1., 1.]]
 ```
