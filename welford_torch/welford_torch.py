@@ -123,7 +123,7 @@ class Welford:
         self.__m += delta / self.__count
         self.__s += delta * (element - self.__m)
 
-    def add_all(self, elements, backup_flg=True):
+    def add_all(self, elements, backup_flg=False):
         """ add_all
 
         add multiple data samples.
@@ -133,13 +133,25 @@ class Welford:
             backup_flg (boolean): if True, backup previous state for rollbacking.
 
         """
+        elements = elements.to(self.__dtype).to(self.__device)
+        if self.__count == 0:
+            self.__shape = elements.shape[1:]
+            self.__m = torch.zeros(self.__shape, dtype=self.__dtype, device=self.__device)
+            self.__s = torch.zeros(self.__shape, dtype=self.__dtype, device=self.__device)
+
         # backup for rollbacking
         if backup_flg:
             self.__backup_attrs()
 
         elements = elements.to(self.__dtype).to(self.__device)
-        for elem in elements:
-            self.add(elem, backup_flg=False)
+        batch_size = elements.shape[0]
+
+        # Compute delta and update mean and S in a batched way
+        delta = elements - self.__m
+        self.__m += torch.sum(delta, axis=0) / (self.__count + batch_size)
+        self.__s += torch.sum(delta * (elements - self.__m), axis=0)
+
+        self.__count += batch_size
 
     def rollback(self):
         self.__count = self.__count_old
