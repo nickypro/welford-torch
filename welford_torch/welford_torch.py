@@ -133,11 +133,15 @@ class Welford:
             backup_flg (boolean): if True, backup previous state for rollbacking.
 
         """
-        elements = elements.to(self.__dtype).to(self.__device)
-        if self.__count == 0:
+        if self.__shape is None:
+            self.__device = elements.device if (self.__device is None) else self.__device
             self.__shape = elements.shape[1:]
-            self.__m = torch.zeros(self.__shape, dtype=self.__dtype, device=self.__device)
-            self.__s = torch.zeros(self.__shape, dtype=self.__dtype, device=self.__device)
+            self.__m = torch.zeros(self.__shape, dtype=self.__dtype).to(self.__device)
+            self.__s = torch.zeros(self.__shape, dtype=self.__dtype).to(self.__device)
+            self.__init_old_with_nan()
+            if self.__detached:
+                self.detach()
+
 
         # backup for rollbacking
         if backup_flg:
