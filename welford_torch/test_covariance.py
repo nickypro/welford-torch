@@ -116,6 +116,64 @@ def test_add():
     assert np.allclose(conventional_corrcoef_2, torch_to_np(ocov.corrcoef[1])), \
         "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
 
+def test_add_all():
+    "Demonstrate OnlineCovariance.add(observation)"
+
+    # COVARIANCE MATRIX shape [3] -> [3, 3]
+    data = create_correlated_dataset(
+        10000, (2.2, 4.4, 1.5), torch.tensor([[0.2, 0.5, 0.7],[0.3, 0.2, 0.2],[0.5,0.3,0.1]]), (1, 5, 3)
+    )
+
+    # CONVENTIONAL COVARIANCE MATRIX
+    conventional_mean, conventional_cov, conventional_corrcoef = calculate_conventional(data)
+
+    # ONLINE COVARIANCE MATRIX
+    ocov = OnlineCovariance()
+    import einops
+    for data_frac in einops.rearrange(data, "(k ten) ... -> k ten ...", k=1000, ten=10):
+        ocov.add_all(data_frac)
+
+    assert torch.allclose(conventional_mean, ocov.mean), \
+        "Mean should be the same with both approaches."
+
+    assert np.allclose(conventional_cov, torch_to_np(ocov.cov), atol=1e-3), \
+        "Covariance-matrix should be the same with both approaches."
+
+    assert np.allclose(conventional_corrcoef, torch_to_np(ocov.corrcoef)), \
+        "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
+    # ONLINE COVARIANCE MATRICES shape [2, 3] -> [2, 3, 3]
+    data_2 = create_correlated_dataset(
+        10000, (6.6, 1.1, 2.5), torch.tensor([[0.9, 0.2, 0.3],[0.3, 0.1, 0.2],[0.2,0.3,0.5]]), (2, 7, 5)
+    )
+
+    # CONVENTIONAL COVARIANCE
+    conventional_mean_2, conventional_cov_2, conventional_corrcoef_2 = calculate_conventional(data_2)
+
+    # ONLINE COVARIANCE MATRIX
+    zipped_data = []
+    for obs_1, obs_2 in zip(data, data_2):
+        zipped_data.append(torch.stack([obs_1, obs_2]))
+    zipped_data = torch.stack(zipped_data)
+
+    ocov = OnlineCovariance()
+    for data_frac in einops.rearrange(zipped_data, "(k ten) ... -> k ten ...", k=1000, ten=10):
+        ocov.add_all(data_frac)
+
+    assert torch.allclose(conventional_mean, ocov.mean[0]), \
+        "Mean should be the same with both approaches."
+    assert np.allclose(conventional_cov, torch_to_np(ocov.cov[0]), atol=1e-3), \
+        "Covariance-matrix should be the same with both approaches."
+    assert np.allclose(conventional_corrcoef, torch_to_np(ocov.corrcoef[0])), \
+        "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
+    assert torch.allclose(conventional_mean_2, ocov.mean[1]), \
+        "Mean should be the same with both approaches."
+    assert np.allclose(conventional_cov_2, torch_to_np(ocov.cov[1]), atol=1e-3), \
+        "Covariance-matrix should be the same with both approaches."
+    assert np.allclose(conventional_corrcoef_2, torch_to_np(ocov.corrcoef[1])), \
+        "Pearson-Correlationcoefficient-matrix should be the same with both approaches."
+
 
 def test_merge():
     "Demonstrate OnlineCovariance.merge()"
@@ -183,6 +241,7 @@ def test_all():
     tests = [
         test_init,
         test_add,
+        test_add_all,
         test_merge,
         test_whitening,
     ]

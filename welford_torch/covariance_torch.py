@@ -1,6 +1,7 @@
 # Source: https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
 
 import torch
+import einops
 
 class OnlineCovariance:
     """
@@ -153,15 +154,16 @@ class OnlineCovariance:
         observation = observation.to(self.__dtype).to(self.__device)
 
         self.__count += 1
-        delta_at_nMin1 = observation - self.__mean
-        self.__mean += delta_at_nMin1 / self.__count
-        weighted_delta_at_n = (observation - self.__mean) / self.__count
+        delta_x = observation - self.__mean
+        self.__mean += delta_x / self.__count
+        delta_x_2_weighted = (observation - self.__mean) / self.__count
 
-        D_at_n = self.__expand_last_dim(weighted_delta_at_n).transpose(-2, -1)
-        D = (self.__expand_last_dim(delta_at_nMin1) * self.__identity) @ D_at_n
+        ein_string = "... pos_i, ... pos_j -> ... pos_i pos_j"
+        D = einops.einsum(delta_x, delta_x_2_weighted, ein_string)
+
         self.__cov = self.__cov * (self.__count - 1) / self.__count + D
 
-    def add_all(self, elements):
+    def add_all(self, xs):
         """ add_all
 
         add multiple data samples.
@@ -171,10 +173,35 @@ class OnlineCovariance:
             backup_flg (boolean): if True, backup previous state for rollbacking.
 
         """
-        # backup for rollbacking
-        elements = elements.to(dtype=self.__dtype, device=self.__device)
-        for elem in elements:
-            self.add(elem)
+        # check init
+        if self.__order is None:
+            self.init_zeros(xs[0])
+
+        # Move to device
+        xs = xs.to(dtype=self.__dtype, device=self.__device)
+
+        # Check counts and keep track
+        n = xs.shape[0]
+        assert xs.shape[1:] == self.__order
+
+        self.__count += n
+
+        # update means for X and Z
+        old_mean = self.__mean.clone()
+        old_count = int(self.__count)
+        delta_xs   = xs - old_mean
+
+        self.__mean.add_(delta_xs.sum(dim=0)/self.__count)
+        new_mean = self.__mean
+        delta_xs_2 = xs - new_mean
+
+        # Update Covariance Matrices
+        ein_string = "n_tokens ... pos_i, n_tokens ... pos_j -> ... pos_i pos_j"
+        batch_cov_update = einops.einsum(delta_xs, delta_xs_2, ein_string) / self.__count
+        self.__cov.mul_((self.__count-n)/self.__count)
+        self.__cov.add_(batch_cov_update)
+
+        return self
 
     def merge(self, other):
         """
@@ -242,6 +269,7 @@ class OnlineCovariance:
         shape = tensor.shape # __order
         repeat_shape = ( *( [1]*len(shape) ), shape[-1] ) # 1, ..., 1, n
         return tensor.unsqueeze(-1).repeat(repeat_shape)
+
 
     def __compute_eig(self):
         """

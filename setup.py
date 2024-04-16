@@ -12,7 +12,7 @@ kwargs = {
     "url": "https://github.com/pesvut/welford-torch",
     "license": "MIT",
     "keywords": ["statistics", "online", "welford", "torch", "covariance", "correlation"],
-    "install_requires": ["torch"],
+    "install_requires": ["torch", "einops"],
     "packages": ["welford_torch"],
     "long_description": readme,
     "long_description_content_type": "text/markdown",
