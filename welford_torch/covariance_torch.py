@@ -1,5 +1,5 @@
 # Source: https://carstenschelp.github.io/2019/05/12/Online_Covariance_Algorithm_002.html
-
+import copy
 import torch
 import einops
 
@@ -311,6 +311,39 @@ class OnlineCovariance:
         val, vec = self.__compute_eig()
         D_sqrt = self.__expand_last_dim(torch.sqrt(val)) * self.__identity
         return (vec @ D_sqrt @ vec.transpose(-2, -1))
+
+    def to_inplace(self, device=None, dtype=None):
+        """Move the covariance statistics to the specified device and dtype (inplace)."""
+        if device is not None:
+            self.__device = torch.device(device)
+            if self.__mean is not None:
+                self.__mean = self.__mean.to(self.__device)
+                self.__cov = self.__cov.to(self.__device)
+                self.__identity = self.__identity.to(self.__device)
+                if self.__eig_vectors is not None:
+                    self.__eig_vectors = self.__eig_vectors.to(self.__device)
+                if self.__eig_values is not None:
+                    self.__eig_values = self.__eig_values.to(self.__device)
+
+        if dtype is not None:
+            self.__dtype = dtype
+            if self.__mean is not None:
+                self.__mean = self.__mean.to(self.__dtype)
+                self.__cov = self.__cov.to(self.__dtype)
+                self.__identity = self.__identity.to(self.__dtype)
+                if self.__eig_vectors is not None:
+                    self.__eig_vectors = self.__eig_vectors.to(self.__dtype)
+                if self.__eig_values is not None:
+                    self.__eig_values = self.__eig_values.to(self.__dtype)
+
+        return self
+
+    def to(self, device=None, dtype=None):
+        """Move the covariance statistics to the specified device and dtype (copy)."""
+        new_cov: OnlineCovariance = copy.deepcopy(self)
+        new_cov.to_inplace(device=device, dtype=dtype)
+        return new_cov
+
 
     def detach(self):
         self.__detached = True

@@ -14,6 +14,7 @@ without using numpy library.
     * implementaion done by jvf: github.com/jvf/welford
 """
 import torch
+import copy
 
 
 class Welford:
@@ -203,6 +204,33 @@ class Welford:
         self.__m_old[...] = torch.nan
         self.__s_old = torch.empty(self.__shape, dtype=self.__dtype).to(self.__device)
         self.__s_old[...] = torch.nan
+
+
+
+    def to_inplace(self, device=None, dtype=None):
+        """Move the Welford statistics to the specified device and dtype (inplace)."""
+        if device is not None:
+            self.__device = torch.device(device)
+            if self.__m is not None:
+                self.__m = self.__m.to(self.__device)
+                self.__s = self.__s.to(self.__device)
+                self.__m_old = self.__m_old.to(self.__device)
+                self.__s_old = self.__s_old.to(self.__device)
+
+        if dtype is not None:
+            self.__dtype = dtype
+            if self.__m is not None:
+                self.__m = self.__m.to(self.__dtype)
+                self.__s = self.__s.to(self.__dtype)
+                self.__m_old = self.__m_old.to(self.__dtype)
+                self.__s_old = self.__s_old.to(self.__dtype)
+
+        return self
+    def to(self, device=None, dtype=None):
+        """Move the Welford statistics to the specified device and dtype (copy)."""
+        new_w: Welford = copy.deepcopy(self)
+        new_w.to_inplace(device=device, dtype=dtype)
+        return new_w
 
     def detach(self):
         self.__detached = True

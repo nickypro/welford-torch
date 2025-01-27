@@ -1,3 +1,4 @@
+import traceback
 import torch
 from welford_torch import Welford
 
@@ -160,6 +161,56 @@ def test_merge():
     assert torch.allclose(wa.var_s, torch.tensor([[0.5, 50, 5000], [0, 0, 0]], dtype=torch.float32))
     assert torch.allclose(wa.var_p, torch.tensor([[0.25, 25, 2500], [0, 0, 0]], dtype=torch.float32))
 
+def test_to_device_dtype():
+    # Test dtype conversion
+    a = torch.tensor([[0, 100], [1, 110], [2, 120], [3, 130], [4, 140]])
+    w_orig = Welford(a, dtype=torch.float32, device='cpu')
+
+    # Convert to float64
+    w = w_orig.to(dtype=torch.float64)
+    assert w.mean.dtype == torch.float64
+    assert w.var_s.dtype == torch.float64
+    assert w.var_p.dtype == torch.float64
+    # should not be in place
+    assert w_orig.mean.dtype == torch.float32
+    assert w_orig.var_s.dtype == torch.float32
+    assert w_orig.var_p.dtype == torch.float32
+
+    # Convert back to float32
+    w = w.to(dtype=torch.float32)
+    assert w.mean.dtype == torch.float32
+    assert w.var_s.dtype == torch.float32
+    assert w.var_p.dtype == torch.float32
+
+    # Test device conversion
+    if torch.cuda.is_available():
+        # Move to GPU
+        w = w.to(device='cuda')
+        assert w.mean.device.type == 'cuda'
+        assert w.var_s.device.type == 'cuda'
+        assert w.var_p.device.type == 'cuda'
+
+        # should not be in place
+        assert w_orig.mean.device.type == 'cpu'
+        assert w_orig.var_s.device.type == 'cpu'
+        assert w_orig.var_p.device.type == 'cpu'
+
+        # Move back to CPU
+        w = w.to(device='cpu')
+        assert w.mean.device.type == 'cpu'
+        assert w.var_s.device.type == 'cpu'
+        assert w.var_p.device.type == 'cpu'
+
+    # Test combined dtype and device conversion
+    if torch.cuda.is_available():
+        w = w.to(device='cuda', dtype=torch.float64)
+        assert w.mean.device.type == 'cuda'
+        assert w.mean.dtype == torch.float64
+        assert w.var_s.device.type == 'cuda'
+        assert w.var_s.dtype == torch.float64
+        assert w.var_p.device.type == 'cuda'
+        assert w.var_p.dtype == torch.float64
+
 def test_all():
     tests = [
         test_init,
@@ -167,14 +218,20 @@ def test_all():
         test_add_all,
         test_rollback,
         test_merge,
+        test_to_device_dtype,
     ]
-    for test in tests:
+    failed_tests = []
+    print("# Running tests...")
+    for i, test in enumerate(tests):
         try:
-            print(f"# Running test {test.__name__}...")
             test()
-            print(f"Test {test.__name__} passed")
+            print(f"✅ Test {test.__name__} passed ({i+1}/{len(tests)})")
         except AssertionError as e:
-            print(f"Test {test.__name__} failed: {e}")
+            print(f"❌ Test {test.__name__} failed ({i+1}/{len(tests)})")
+            failed_tests.append((test.__name__, traceback.format_exc()))
+    for test, error in failed_tests:
+        print("#"*20 + "# FAILED TEST: " + test)
+        print(error)
 
 if __name__ == "__main__":
     test_all()

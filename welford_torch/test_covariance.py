@@ -237,6 +237,57 @@ def test_whitening():
     assert torch.allclose(whitened_ocov.cov, whitened_ocov.identity, atol=1e-3), \
         "Whitening data should lead Covariance Matrix to look like the Identity matrix in this dataset."
 
+def test_to_device_dtype():
+    # Test dtype conversion
+    a = torch.tensor([[0, 100], [1, 110], [2, 120], [3, 130], [4, 140]])
+    ocov_orig = OnlineCovariance(a, dtype=torch.float32, device='cpu')
+
+    # Convert to float64
+    ocov = ocov_orig.to(dtype=torch.float64)
+    assert ocov.mean.dtype == torch.float64
+    assert ocov.cov.dtype == torch.float64
+    assert ocov.corrcoef.dtype == torch.float64
+    # should not be in place
+    assert ocov_orig.mean.dtype == torch.float32
+    assert ocov_orig.cov.dtype == torch.float32
+    assert ocov_orig.corrcoef.dtype == torch.float32
+
+    # Convert back to float32
+    ocov = ocov.to(dtype=torch.float32)
+    assert ocov.mean.dtype == torch.float32
+    assert ocov.cov.dtype == torch.float32
+    assert ocov.corrcoef.dtype == torch.float32
+
+    # Test device conversion
+    if torch.cuda.is_available():
+        # Move to GPU
+        ocov = ocov.to(device='cuda')
+        assert ocov.mean.device.type == 'cuda'
+        assert ocov.cov.device.type == 'cuda'
+        assert ocov.corrcoef.device.type == 'cuda'
+
+        # should not be in place
+        assert ocov_orig.mean.device.type == 'cpu'
+        assert ocov_orig.cov.device.type == 'cpu'
+        assert ocov_orig.corrcoef.device.type == 'cpu'
+
+        # Move back to CPU
+        ocov = ocov.to(device='cpu')
+        assert ocov.mean.device.type == 'cpu'
+        assert ocov.cov.device.type == 'cpu'
+        assert ocov.corrcoef.device.type == 'cpu'
+
+    # Test combined dtype and device conversion
+    if torch.cuda.is_available():
+        ocov = ocov.to(device='cuda', dtype=torch.float64)
+        assert ocov.mean.device.type == 'cuda'
+        assert ocov.mean.dtype == torch.float64
+        assert ocov.cov.device.type == 'cuda'
+        assert ocov.cov.dtype == torch.float64
+        assert ocov.corrcoef.device.type == 'cuda'
+        assert ocov.corrcoef.dtype == torch.float64
+
+
 def test_all():
     tests = [
         test_init,
@@ -244,15 +295,21 @@ def test_all():
         test_add_all,
         test_merge,
         test_whitening,
+        test_to_device_dtype,
     ]
-    for test in tests:
+    failed_tests = []
+    print("# Running tests...")
+    for i, test in enumerate(tests):
         try:
-            print(f"# Running test {test.__name__}...")
             test()
-            print(f"Test {test.__name__} passed")
+            print(f"✅ Test {test.__name__} passed ({i+1}/{len(tests)})")
         except AssertionError as e:
-            print(f"Test {test.__name__} failed: {e}")
-            traceback.print_exc()
+            print(f"❌ Test {test.__name__} failed ({i+1}/{len(tests)})")
+            failed_tests.append((test.__name__, traceback.format_exc()))
+
+    for test, error in failed_tests:
+        print("#"*20 + "# FAILED TEST: " + test)
+        print(error)
 
 if __name__ == "__main__":
     test_all()
